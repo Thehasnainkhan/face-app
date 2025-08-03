@@ -1,0 +1,481 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="dashboard-container p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="display-5 fw-bold text-primary">
+                        <i class="fas fa-chart-bar"></i> Attendance Dashboard
+                    </h1>
+                    <a href="{% url 'home' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-camera"></i> Mark Attendance
+                    </a>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <h4>{{ attendance_list.count }}</h4>
+                            <p class="mb-0">Total Records</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <i class="fas fa-user-check fa-2x mb-2"></i>
+                            <h4>{{ attendance_list|length }}</h4>
+                            <p class="mb-0">Present Today</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <i class="fas fa-calendar fa-2x mb-2"></i>
+                            <h4>{{ dates.count }}</h4>
+                            <p class="mb-0">Days Tracked</p>
+                        </div>
+                    </div>
+                        <div class="col-md-3">
+                            <div class="stats-card text-center">
+                                <i class="fas fa-user-graduate fa-2x mb-2"></i>
+                                <h4>{{ students.count }}</h4>
+                                <p class="mb-0">Total Students</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Filters and Table -->
+                        <div class="col-lg-8">
+                            <!-- Filters -->
+                            <div class="filter-section">
+                                <h5 class="mb-3"><i class="fas fa-filter"></i> Filters</h5>
+                                <form method="get" class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Date</label>
+                                        <select name="date" class="form-select">
+                                            <option value="">All Dates</option>
+                                            {% for date in dates %}
+                                            <option value="{{ date|date:'Y-m-d' }}" {% if date_filter == date|date:'Y-m-d' %}selected{% endif %}>
+                                                {{ date|date:"M d, Y" }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Student Name</label>
+                                        <select name="name" class="form-select">
+                                            <option value="">All Students</option>
+                                            {% for student in students %}
+                                            <option value="{{ student.name }}" {% if name_filter == student.name %}selected{% endif %}>
+                                                {{ student.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Month</label>
+                                        <input type="month" name="month" class="form-control" value="{{ month_filter }}">
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary me-2">
+                                            <i class="fas fa-search"></i> Filter
+                                        </button>
+                                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-times"></i> Clear
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Export Options -->
+                            <div class="filter-section">
+                                <h5 class="mb-3"><i class="fas fa-download"></i> Export Options</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <a href="{% url 'export' %}?type=all" class="btn btn-success w-100">
+                                            <i class="fas fa-file-excel"></i> Export All
+                        <div class="col-md-3">
+                            <div class="stats-card text-center">
+                                <i class="fas fa-hourglass-half fa-2x mb-2"></i>
+                                <h4>{{ late_count }}</h4>
+                                <p class="mb-0">Late Today</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <!-- Filter Section -->
+                            <div class="filter-section mb-4">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <a href="{% url 'export' %}" class="btn btn-success w-100">
+                                            <i class="fas fa-file-excel"></i> Export All
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <a href="{% url 'export' %}?type=date&date={{ date_filter }}" class="btn btn-info w-100">
+                                            <i class="fas fa-calendar"></i> Export by Date
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <a href="{% url 'export' %}?type=month&month={{ month_filter }}" class="btn btn-warning w-100">
+                                            <i class="fas fa-calendar-alt"></i> Export by Month
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Attendance Table -->
+                            <div class="table-container">
+                                <h5 class="mb-3"><i class="fas fa-table"></i> Attendance Records</h5>
+                                <div class="table-responsive">
+                                    <!-- Student Management Section -->
+                                    <div class="mb-4">
+                                        <h5 class="mb-3"><i class="fas fa-users"></i> Registered Students</h5>
+                                        <table class="table table-striped table-hover">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Student Name</th>
+                                                    <th>Student ID</th>
+                                                    <th>Email</th>
+                                                    <th>Photo</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for student in all_students %}
+                                                <tr>
+                                                    <td>{{ student.name }}</td>
+                                                    <td>{{ student.student_id }}</td>
+                                                    <td>{{ student.email }}</td>
+                                                    <td>
+                                                        {% if student.photo %}
+                                                            <img src="{{ student.photo.url }}" alt="Student Photo" style="width: 50px; height: 50px; object-fit: cover; border-radius: 50%;">
+                                                        {% else %}
+                                                            <span class="text-muted">No photo</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-danger btn-sm delete-student" 
+                                                                data-id="{{ student.id }}"
+                                                                data-name="{{ student.name }}"
+                                                                data-student-id="{{ student.student_id }}">
+                                                            <i class="fas fa-trash"></i> Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Attendance Records -->
+                                    <h5 class="mb-3"><i class="fas fa-table"></i> Attendance Records</h5>
+                                    <table class="table table-striped table-hover">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>Student Name</th>
+                                                <th>Student ID</th>
+                                                <th>Date</th>
+                                                <th>Time In</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for attendance in attendance_list %}
+                                            <tr>
+                                                <td>{{ attendance.student.name }}</td>
+                                                <td>{{ attendance.student.student_id }}</td>
+                                                <td>{{ attendance.date|date:"M d, Y" }}</td>
+                                                <td>{{ attendance.time_in|time:"H:i" }}</td>
+                                                <td>
+                                                    <span class="badge bg-{% if attendance.status == 'present' %}success{% elif attendance.status == 'late' %}warning{% else %}danger{% endif %}">
+                                                        {{ attendance.status|title }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-danger btn-sm delete-attendance" 
+                                                            data-id="{{ attendance.id }}" 
+                                                            data-name="{{ attendance.student.name }}"
+                                                            data-date="{{ attendance.date|date:'M d, Y' }}">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted">
+                                                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                                                    <br>No attendance records found
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+
+                                    {% if messages %}
+                                    <div class="messages mt-3">
+                                        {% for message in messages %}
+                                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                            {{ message }}
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chatbot -->
+                        <div class="col-lg-4">
+                            <div class="chatbot-container">
+                                <h5 class="mb-3"><i class="fas fa-robot"></i> AI Assistant</h5>
+                                <div id="chatMessages" class="mb-3">
+                                    <div class="chat-message bot-message">
+                                        <strong>AI Assistant:</strong> Hello! I can help you with attendance queries. Try asking:
+                                        <ul class="mb-0 mt-2">
+                                            <li>"How many students attended today?"</li>
+                                            <li>"Show me attendance for [student name]"</li>
+                                            <li>"Download this month's report"</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <input type="text" id="chatInput" class="form-control" placeholder="Ask about attendance...">
+                                    <button class="btn btn-primary" type="button" id="sendBtn">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    .dashboard-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+    }
+    .stats-card {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .table-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    .chatbot-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        height: 400px;
+        overflow-y: auto;
+    }
+    .chat-message {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 10px;
+    }
+    .user-message {
+        background: #e3f2fd;
+        margin-left: 20%;
+    }
+    .bot-message {
+        background: #f5f5f5;
+        margin-right: 20%;
+    }
+    .filter-section {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<script>
+    // Delete attendance functionality
+    document.querySelectorAll('.delete-attendance').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const name = this.getAttribute('data-name');
+            const date = this.getAttribute('data-date');
+            
+            if (confirm(`Are you sure you want to delete attendance for ${name} on ${date}?`)) {
+                window.location.href = `/delete_attendance/${id}/`;
+            }
+        });
+    });
+
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const chatMessages = document.getElementById('chatMessages');
+
+    function addMessage(message, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${isUser ? 'user-message' : 'bot-message'}`;
+        messageDiv.innerHTML = `<strong>${isUser ? 'You' : 'AI Assistant'}:</strong> ${message}`;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        addMessage(message, true);
+        chatInput.value = '';
+
+        fetch('/chatbot/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ query: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            addMessage(data.response);
+        })
+        .catch(error => {
+            addMessage('Sorry, I encountered an error. Please try again.');
+            console.error('Error:', error);
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+</script>
+{% endblock %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Delete student functionality
+        document.querySelectorAll('.delete-student').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                const studentId = this.getAttribute('data-student-id');
+                
+                if (confirm(`Are you sure you want to delete student ${name} (${studentId})? This will also delete all attendance records for this student.`)) {
+                    window.location.href = `/delete_student/${id}/`;
+                }
+            });
+        });
+
+        // Delete attendance functionality
+        document.querySelectorAll('.delete-attendance').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                const date = this.getAttribute('data-date');
+                
+                if (confirm(`Are you sure you want to delete attendance for ${name} on ${date}?`)) {
+                    window.location.href = `/delete_attendance/${id}/`;
+                }
+            });
+        });
+
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatMessages = document.getElementById('chatMessages');
+
+        function addMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.innerHTML = `<strong>${isUser ? 'You' : 'AI Assistant'}:</strong> ${message}`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            chatInput.value = '';
+
+            fetch('/chatbot/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ query: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage(data.response);
+            })
+            .catch(error => {
+                addMessage('Sorry, I encountered an error. Please try again.');
+                console.error('Error:', error);
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html> 

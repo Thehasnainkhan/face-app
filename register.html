@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="dashboard-container p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="display-5 fw-bold text-primary">
+                        <i class="fas fa-user-plus"></i> Register New Student
+                    </h1>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-chart-bar"></i> View Dashboard
+                    </a>
+                </div>
+
+                {% if messages %}
+                <div class="messages mb-4">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="name" name="name" placeholder="Full Name" required>
+                                        <label for="name"><i class="fas fa-user me-2"></i>Full Name</label>
+                                        <div class="invalid-feedback">Please enter the student's full name.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="student_id" name="student_id" placeholder="Student ID" required>
+                                        <label for="student_id"><i class="fas fa-id-card me-2"></i>Student ID</label>
+                                        <div class="invalid-feedback">Please enter a valid student ID.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="email" class="form-control" id="email" name="email" placeholder="Email Address">
+                                        <label for="email"><i class="fas fa-envelope me-2"></i>Email Address</label>
+                                        <div class="invalid-feedback">Please enter a valid email address.</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="photo" class="form-label"><i class="fas fa-camera me-2"></i>Student Photo</label>
+                                        <input class="form-control" type="file" id="photo" name="photo" accept="image/*">
+                                        <div class="form-text mb-2">Upload a clear front-facing photo for face recognition.</div>
+                                        <button type="button" id="cameraBtn" class="btn btn-primary">
+                                            <i class="fas fa-camera me-2"></i>Take Photo with Camera
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-12" id="cameraContainer" style="display: none;">
+                                    <div class="camera-container mb-3">
+                                        <video id="video" width="100%" height="300" autoplay muted></video>
+                                        <canvas id="canvas" style="display: none;"></canvas>
+                                    </div>
+                                    <div class="text-center mb-3">
+                                        <button type="button" id="captureBtn" class="btn btn-success me-2">
+                                            <i class="fas fa-camera me-2"></i>Capture Photo
+                                        </button>
+                                        <button type="button" id="cancelBtn" class="btn btn-secondary">
+                                            <i class="fas fa-times me-2"></i>Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-12 text-center mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                                        <i class="fas fa-save me-2"></i>Register Student
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <h4 class="mb-3"><i class="fas fa-info-circle me-2"></i>Registration Instructions</h4>
+                    <div class="card">
+                        <div class="card-body">
+                            <ol class="mb-0">
+                                <li class="mb-2">Enter the student's full name, ID, and email address.</li>
+                                <li class="mb-2">Upload a clear front-facing photo for face recognition.</li>
+                                <li class="mb-2">The photo should have good lighting and show the face clearly.</li>
+                                <li class="mb-2">After registration, the student can mark attendance using the home page.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        
+        // Fetch all forms we want to apply validation to
+        var forms = document.querySelectorAll('.needs-validation')
+        
+        // Loop over them and prevent submission
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+    
+    // Camera functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM Elements
+        const cameraBtn = document.getElementById('cameraBtn');
+        const cameraContainer = document.getElementById('cameraContainer');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const photoInput = document.getElementById('photo');
+        
+        // Stream variable to store camera stream
+        let stream = null;
+        
+        // Function to start camera
+        function startCamera() {
+            cameraContainer.style.display = 'block';
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function(mediaStream) {
+                    stream = mediaStream;
+                    video.srcObject = mediaStream;
+                    video.play();
+                })
+                .catch(function(err) {
+                    console.error('Error accessing camera:', err);
+                    alert('Error accessing camera: ' + err.message);
+                });
+        }
+        
+        // Function to stop camera
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            video.srcObject = null;
+            cameraContainer.style.display = 'none';
+        }
+        
+        // Function to capture photo
+        function capturePhoto() {
+            const context = canvas.getContext('2d');
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            // Draw video frame to canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Convert canvas to blob
+            canvas.toBlob(function(blob) {
+                // Create a File object
+                const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+                
+                // Create a FileList-like object
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                
+                // Set the file input's files property
+                photoInput.files = dataTransfer.files;
+                
+                // Stop the camera
+                stopCamera();
+            }, 'image/jpeg', 0.95);
+        }
+        
+        // Event Listeners
+        if (cameraBtn) cameraBtn.addEventListener('click', startCamera);
+        if (captureBtn) captureBtn.addEventListener('click', capturePhoto);
+        if (cancelBtn) cancelBtn.addEventListener('click', stopCamera);
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        margin-bottom: 30px;
+    }
+    
+    .form-floating > label {
+        padding-left: 1.75rem;
+    }
+    
+    .form-floating > .form-control {
+        padding-left: 1.75rem;
+    }
+    
+    .form-control:focus {
+        border-color: #4a6bff;
+        box-shadow: 0 0 0 0.25rem rgba(74, 107, 255, 0.25);
+    }
+</style>
+{% endblock %}
